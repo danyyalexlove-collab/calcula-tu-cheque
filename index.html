@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calcula tu Cheque · Ontario</title>
+<meta name="description" content="¿Te están pagando bien? Calcula tu cheque en Ontario en español.">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1a14; --card:#17261d; --line:#25392c; --text:#eef5f0; --muted:#9fb5a7;
+    --green:#2ecc71; --green2:#27ae60; --yellow:#f1c40f; --red:#e74c3c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:20px 16px 60px}
+  .wrap{max-width:480px;margin:0 auto}
+  header{text-align:center;margin-bottom:22px}
+  header .logo{font-size:44px}
+  h1{font-size:26px;font-weight:800;line-height:1.2;margin:6px 0}
+  h1 span{color:var(--green)}
+  header p{color:var(--muted);font-size:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
+  .card h2{font-size:16px;margin-bottom:12px}
+  label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+  input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#0c140f;color:var(--text);font-size:16px;font-family:inherit}
+  input:focus,select:focus{outline:2px solid var(--green);border-color:transparent}
+  .row{display:flex;gap:10px}
+  .row>div{flex:1}
+  .check{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:14px;color:var(--text)}
+  .check input{width:22px;height:22px;accent-color:var(--green)}
+  .hint{font-size:12px;color:var(--muted);margin-top:4px}
+  .btn{display:block;width:100%;padding:15px;border:none;border-radius:12px;font-size:17px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:16px}
+  .btn-main{background:var(--green);color:#06210f}
+  .btn-main:active{background:var(--green2)}
+  .btn-pay{background:var(--yellow);color:#2b2200}
+  .hidden{display:none}
+  .line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line);font-size:15px}
+  .line:last-child{border-bottom:none}
+  .line.total{font-weight:800;font-size:19px;color:var(--green);border-top:2px solid var(--line);margin-top:6px;padding-top:12px}
+  .neg{color:#ff8a7a}
+  .alert{border-radius:12px;padding:12px 14px;font-size:14px;margin-top:12px;line-height:1.5}
+  .alert.ok{background:#173d26;border:1px solid var(--green2)}
+  .alert.warn{background:#3d3412;border:1px solid var(--yellow)}
+  .alert.bad{background:#3d1714;border:1px solid var(--red)}
+  .ia-box{white-space:pre-wrap;line-height:1.6;font-size:15px}
+  .loading{text-align:center;color:var(--muted);padding:20px}
+  .spin{display:inline-block;width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--green);border-radius:50%;animation:s 1s linear infinite;margin-bottom:8px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  footer{text-align:center;color:var(--muted);font-size:11px;line-height:1.6;margin-top:24px}
+  .price{font-size:13px;color:var(--muted);text-align:center;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">💵</div>
+    <h1>¿Te están pagando <span>bien</span>?</h1>
+    <p>Calcula tu cheque en Ontario · En español · Gratis</p>
+  </header>
+
+  <!-- FORMULARIO -->
+  <div class="card" id="formCard">
+    <h2>📝 Tus datos</h2>
+
+    <label>¿En qué trabajas?</label>
+    <select id="tipo">
+      <option value="agricola">Invernadero / campo / granja</option>
+      <option value="general">Fábrica / almacén / restaurante / otro</option>
+    </select>
+
+    <label>¿Cada cuánto te pagan?</label>
+    <select id="frecuencia">
+      <option value="52">Cada semana</option>
+      <option value="26">Cada 2 semanas</option>
+    </select>
+
+    <label>¿Cuánto te pagan por hora? ($)</label>
+    <input type="number" id="tarifa" step="0.01" inputmode="decimal" placeholder="Ej. 17.95">
+
+    <div class="row">
+      <div>
+        <label>Horas semana 1</label>
+        <input type="number" id="h1" step="0.25" inputmode="decimal" placeholder="Ej. 50">
+      </div>
+      <div id="h2box" class="hidden">
+        <label>Horas semana 2</label>
+        <input type="number" id="h2" step="0.25" inputmode="decimal" placeholder="Ej. 48">
+      </div>
+    </div>
+
+    <label class="check"><input type="checkbox" id="vacaciones" checked> Me pagan vacaciones (4%) en cada cheque</label>
+
+    <label>¿Cuánto te llegó limpio en el cheque? (opcional)</label>
+    <input type="number" id="netoReal" step="0.01" inputmode="decimal" placeholder="Ej. 742.50">
+    <div class="hint">Así comparamos si te falta dinero.</div>
+
+    <button class="btn btn-main" onclick="calcular()">Calcular mi cheque</button>
+  </div>
+
+  <!-- RESULTADO -->
+  <div class="card hidden" id="resCard">
+    <h2>📊 Tu cheque estimado</h2>
+    <div id="resultado"></div>
+    <div id="alertas"></div>
+  </div>
+
+  <!-- VENTA IA -->
+  <div class="card hidden" id="ventaCard">
+    <h2>🤖 ¿No te cuadra algo?</h2>
+    <p style="font-size:14px;color:var(--muted);line-height:1.5">
+      La IA te explica tu cheque línea por línea, en español: qué te descontaron, si se ve normal, qué revisar y a dónde llamar si te están pagando de menos.
+    </p>
+    <button class="btn btn-pay" onclick="irAPagar()">Explícame mi cheque · $4</button>
+    <div class="price">Pago seguro con Stripe · Tarjeta de débito o crédito</div>
+  </div>
+
+  <!-- RESPUESTA IA -->
+  <div class="card hidden" id="iaCard">
+    <h2>🤖 Explicación de tu cheque</h2>
+    <div id="iaOut"></div>
+  </div>
+
+  <footer>
+    Cálculo aproximado con tasas 2026 de Ontario (CPP 5.95%, EI 1.63%, impuestos estimados).<br>
+    No es asesoría legal ni fiscal. Tu cheque real puede variar.<br>
+    Dudas de tus derechos: Employment Standards · 1-800-531-5551<br><br>
+    Hecho por <b>Lolo Digital</b> 💚
+  </footer>
+</div>
+
+<script>
+// ===== CONFIGURACIÓN — CAMBIA ESTO =====
+const STRIPE_LINK = 'https://buy.stripe.com/TU_LINK_AQUI';
+
+// ===== TASAS 2026 (actualizar cada enero / octubre) =====
+const T = {
+  minimo: 17.95,          // salario mínimo general Ontario desde 1 oct 2026
+  cpp: 0.0595, cppExento: 3500,
+  ei: 0.0163,
+  fedTramos: [[58523, 0.14], [117045, 0.205], [181440, 0.26], [Infinity, 0.29]],
+  fedBase: 16452 + 1471,  // monto personal básico + Canada employment amount (aprox)
+  onTramos: [[53891, 0.0505], [107785, 0.0915], [150000, 0.1116], [Infinity, 0.1216]],
+  onBase: 12989           // monto personal básico Ontario (aprox)
+};
+
+const $ = id => document.getElementById(id);
+const money = n => '$' + n.toFixed(2);
+
+$('frecuencia').addEventListener('change', e => {
+  $('h2box').classList.toggle('hidden', e.target.value !== '26');
+});
+
+function impuestoTramos(ingreso, tramos) {
+  let imp = 0, prev = 0;
+  for (const [tope, tasa] of tramos) {
+    if (ingreso <= prev) break;
+    imp += (Math.min(ingreso, tope) - prev) * tasa;
+    prev = tope;
+  }
+  return imp;
+}
+
+function saludOntario(i) {
+  if (i <= 20000) return 0;
+  if (i <= 25000) return Math.min(300, 0.06 * (i - 20000));
+  if (i <= 36000) return 300;
+  if (i <= 38500) return Math.min(450, 300 + 0.06 * (i - 36000));
+  if (i <= 48000) return 450;
+  if (i <= 48600) return Math.min(600, 450 + 0.25 * (i - 48000));
+  if (i <= 72000) return 600;
+  if (i <= 72600) return Math.min(750, 600 + 0.25 * (i - 72000));
+  return 750;
+}
+
+function leerDatos() {
+  const frec = +$('frecuencia').value;
+  return {
+    tipo: $('tipo').value,
+    frecuencia: frec,
+    tarifa: parseFloat($('tarifa').value) || 0,
+    horas: frec === 26
+      ? [parseFloat($('h1').value) || 0, parseFloat($('h2').value) || 0]
+      : [parseFloat($('h1').value) || 0],
+    vacaciones: $('vacaciones').checked,
+    netoReal: parseFloat($('netoReal').value) || null
+  };
+}
+
+function calcularCheque(d) {
+  let regular = 0, extra = 0, hReg = 0, hExtra = 0;
+  for (const h of d.horas) {
+    const ot = d.tipo === 'general' ? Math.max(0, h - 44) : 0;
+    hReg += h - ot; hExtra += ot;
+    regular += (h - ot) * d.tarifa;
+    extra += ot * d.tarifa * 1.5;
+  }
+  const base = regular + extra;
+  const vac = d.vacaciones ? base * 0.04 : 0;
+  const bruto = base + vac;
+  const p = d.frecuencia;
+
+  const cpp = Math.max(0, (bruto - T.cppExento / p) * T.cpp);
+  const ei = bruto * T.ei;
+
+  const anual = bruto * p;
+  const fed = Math.max(0, impuestoTramos(anual, T.fedTramos) - T.fedBase * 0.14);
+  const on = Math.max(0, impuestoTramos(anual, T.onTramos) - T.onBase * 0.0505) + saludOntario(anual);
+  const impuestos = (fed + on) / p;
+
+  const neto = bruto - cpp - ei - impuestos;
+  return { hReg, hExtra, regular, extra, vac, bruto, cpp, ei, impuestos, neto };
+}
+
+let ultimo = null;
+
+function calcular() {
+  const d = leerDatos();
+  if (!d.tarifa || d.horas.every(h => !h)) { alert('Pon cuánto te pagan por hora y tus horas 🙏'); return; }
+  const r = calcularCheque(d);
+  ultimo = { datos: d, calculo: r };
+  mostrar(d, r);
+}
+
+function mostrar(d, r) {
+  $('resultado').innerHTML = `
+    <div class="line"><span>Horas normales (${r.hReg})</span><span>${money(r.regular)}</span></div>
+    ${r.hExtra ? `<div class="line"><span>Tiempo extra (${r.hExtra} × 1.5)</span><span>${money(r.extra)}</span></div>` : ''}
+    ${r.vac ? `<div class="line"><span>Vacaciones 4%</span><span>${money(r.vac)}</span></div>` : ''}
+    <div class="line"><b>Bruto (antes de descuentos)</b><b>${money(r.bruto)}</b></div>
+    <div class="line"><span>CPP (pensión)</span><span class="neg">-${money(r.cpp)}</span></div>
+    <div class="line"><span>EI (seguro de empleo)</span><span class="neg">-${money(r.ei)}</span></div>
+    <div class="line"><span>Impuestos (aprox)</span><span class="neg">-${money(r.impuestos)}</span></div>
+    <div class="line total"><span>Te debe llegar aprox.</span><span>${money(r.neto)}</span></div>`;
+
+  let a = '';
+  if (d.tarifa < T.minimo) {
+    a += `<div class="alert bad">⚠️ Tu pago por hora (${money(d.tarifa)}) está <b>debajo del mínimo de Ontario</b> (${money(T.minimo)} desde el 1 de octubre 2026). En algunos trabajos de campo o con contrato especial puede ser distinto — vale la pena revisarlo.</div>`;
+  }
+  if (d.tipo === 'agricola' && d.horas.some(h => h > 44)) {
+    a += `<div class="alert warn">ℹ️ En trabajos agrícolas, la ley de Ontario muchas veces <b>no obliga</b> a pagar tiempo extra. Revisa tu contrato: si dice que sí, te deben pagar 1.5× después de 44 horas.</div>`;
+  }
+  if (d.netoReal) {
+    const dif = d.netoReal - r.neto;
+    const pct = Math.abs(dif) / r.neto;
+    if (pct <= 0.05) a += `<div class="alert ok">✅ Tu cheque (${money(d.netoReal)}) se ve <b>normal</b>. La diferencia es de ${money(Math.abs(dif))}.</div>`;
+    else if (dif < 0) a += `<div class="alert bad">🚩 Te llegaron <b>${money(Math.abs(dif))} menos</b> de lo estimado. Puede ser renta, transporte, comida, seguro u otro descuento — o un error. Vale la pena revisarlo.</div>`;
+    else a += `<div class="alert ok">👍 Te llegó ${money(dif)} más de lo estimado. Puede ser un bono o menos impuestos de lo calculado.</div>`;
+  }
+  $('alertas').innerHTML = a;
+
+  $('resCard').classList.remove('hidden');
+  $('ventaCard').classList.remove('hidden');
+  $('resCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function irAPagar() {
+  if (!ultimo) return;
+  try { localStorage.setItem('cheque_datos', JSON.stringify(ultimo)); } catch (e) {}
+  window.location.href = STRIPE_LINK;
+}
+
+function rellenar(d) {
+  $('tipo').value = d.tipo;
+  $('frecuencia').value = d.frecuencia;
+  $('h2box').classList.toggle('hidden', d.frecuencia !== 26);
+  $('tarifa').value = d.tarifa;
+  $('h1').value = d.horas[0] || '';
+  if (d.horas[1] !== undefined) $('h2').value = d.horas[1];
+  $('vacaciones').checked = d.vacaciones;
+  if (d.netoReal) $('netoReal').value = d.netoReal;
+}
+
+async function explicarConIA(sessionId) {
+  let guardado = null;
+  try { guardado = JSON.parse(localStorage.getItem('cheque_datos')); } catch (e) {}
+  if (!guardado) {
+    $('iaCard').classList.remove('hidden');
+    $('iaOut').innerHTML = '<div class="alert warn">Tu pago llegó ✅ pero no encontramos tus datos. Llénalos otra vez, dale "Calcular" y escríbenos por WhatsApp con tu recibo de pago.</div>';
+    return;
+  }
+  rellenar(guardado.datos);
+  mostrar(guardado.datos, guardado.calculo);
+  $('ventaCard').classList.add('hidden');
+  $('iaCard').classList.remove('hidden');
+  $('iaOut').innerHTML = '<div class="loading"><div class="spin"></div><br>Revisando tu cheque...</div>';
+  $('iaCard').scrollIntoView({ behavior: 'smooth' });
+
+  try {
+    const res = await fetch('/.netlify/functions/explicar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, ...guardado })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error');
+    $('iaOut').innerHTML = '<div class="ia-box"></div>';
+    $('iaOut').firstChild.textContent = data.texto;
+    try { localStorage.removeItem('cheque_datos'); } catch (e) {}
+    history.replaceState(null, '', location.pathname);
+  } catch (e) {
+    $('iaOut').innerHTML = `<div class="alert bad">Algo falló: ${e.message}. Recarga la página para intentar otra vez.</div>`;
+  }
+}
+
+// Al volver de Stripe
+const sid = new URLSearchParams(location.search).get('session_id');
+if (sid) explicarConIA(sid);
+</script>
+</body>
+</html>
